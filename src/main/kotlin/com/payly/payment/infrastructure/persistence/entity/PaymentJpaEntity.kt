@@ -1,5 +1,6 @@
 package com.payly.payment.infrastructure.persistence.entity
 
+import com.payly.payment.domain.model.PaymentStatus
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -20,7 +21,7 @@ data class PaymentJpaEntity(
 
     @Id
     @Column(name = "id", nullable = false, unique = true)
-    val id: String,
+    val id: String = "pay_" + UUID.randomUUID().toString().replace("-", ""),
 
     @Column(name = "merchant_id", nullable = false)
     val merchantId: UUID,
@@ -31,8 +32,9 @@ data class PaymentJpaEntity(
     @Column(name = "currency", nullable = false, length = 3)
     val currency: String,
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 32)
-    val status: String,
+    val status: PaymentStatus = PaymentStatus.CREATED,
 
     @Column(name = "description")
     val description: String? = null,

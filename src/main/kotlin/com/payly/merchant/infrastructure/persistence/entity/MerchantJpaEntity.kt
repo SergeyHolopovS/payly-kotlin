@@ -17,7 +17,7 @@ data class MerchantJpaEntity(
     @Id
     @Column(name = "id", nullable = false, unique = true)
     @GeneratedValue(strategy = GenerationType.UUID)
-    val id: UUID? = null,
+    val id: UUID = UUID.randomUUID(),
 
     @Column(name = "name", nullable = false)
     val name: String,

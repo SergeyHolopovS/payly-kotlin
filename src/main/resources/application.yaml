@@ -36,6 +36,9 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.apache.kafka.common.serialization.StringSerializer
 
+payment:
+  supported-currencies: ${PAYMENT_SUPPORTED_CURRENCIES:RUB,USD,EUR}
+
 server:
   port: 8080
 
