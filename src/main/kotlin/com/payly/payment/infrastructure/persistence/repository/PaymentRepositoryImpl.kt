@@ -40,6 +40,9 @@ class PaymentRepositoryImpl(
             )
         )
 
+    override fun update(payment: Payment): Payment
+        = mapper.toModel(repository.save(mapper.toEntity(payment)))
+
     override fun getById(id: String): Payment
         = mapper.toModel(
             repository

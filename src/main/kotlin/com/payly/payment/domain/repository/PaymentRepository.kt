@@ -18,6 +18,8 @@ interface PaymentRepository {
         cardLast4: String,
     ): Payment
 
+    fun update(payment: Payment): Payment
+
     fun getById(id: String): Payment
 
     fun getList(

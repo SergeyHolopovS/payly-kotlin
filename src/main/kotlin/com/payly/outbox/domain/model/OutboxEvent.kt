@@ -9,4 +9,5 @@ data class OutboxEvent(
     val eventType: String,
     val payload: Map<String, String>? = null,
     val publishedAt: Instant? = null,
+    val createdAt: Instant = Instant.now(),
 )
