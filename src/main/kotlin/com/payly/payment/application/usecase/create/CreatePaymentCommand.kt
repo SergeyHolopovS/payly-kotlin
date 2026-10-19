@@ -8,5 +8,5 @@ data class CreatePaymentCommand (
     val currency: String,
     val description: String? = null,
     val metadata: Map<String, String> = emptyMap(),
-    val cardLast4: String,
+    val cardNumber: String,
 )

@@ -20,6 +20,17 @@ interface PaymentRepository {
 
     fun update(payment: Payment): Payment
 
+    /**
+     * Выбирает и блокирует (SELECT ... FOR UPDATE SKIP LOCKED) пачку платежей
+     * в статусе PROCESSING, для которых истёк имитируемый срок обработки —
+     * для использования планировщиком [com.payly.payment.infrastructure.scheduler.PaymentProcessingScheduler].
+     */
+    fun findDueForFinalization(
+        minDelaySeconds: Int,
+        maxDelaySeconds: Int,
+        batchSize: Int,
+    ): List<Payment>
+
     fun getById(id: String): Payment
 
     fun getList(

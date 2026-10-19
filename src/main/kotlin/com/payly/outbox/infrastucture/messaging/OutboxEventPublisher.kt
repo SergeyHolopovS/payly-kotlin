@@ -2,6 +2,7 @@ package com.payly.outbox.infrastucture.messaging
 
 import com.payly.outbox.domain.model.OutboxEvent
 import com.payly.outbox.domain.repository.OutboxEventRepository
+import com.payly.outbox.infrastucture.properties.OutboxPublisherProperties
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.scheduling.annotation.Scheduled
@@ -24,11 +25,12 @@ class OutboxEventPublisher(
     private val repository: OutboxEventRepository,
     private val kafkaTemplate: KafkaTemplate<String, String>,
     private val objectMapper: ObjectMapper,
+    private val properties: OutboxPublisherProperties,
 ) {
 
-    @Scheduled(fixedDelay = POLL_INTERVAL_MS)
+    @Scheduled(fixedDelayString = "\${outbox.publisher.poll-interval-ms:5000}")
     fun publishPending() {
-        repository.findUnpublished(BATCH_SIZE).forEach(::publish)
+        repository.findUnpublished(properties.batchSize).forEach(::publish)
     }
 
     private fun publish(event: OutboxEvent) {
@@ -48,7 +50,7 @@ class OutboxEventPublisher(
 
         // Ключ = aggregateId, чтобы все события одного платежа попадали
         // в одну партицию и консьюмер видел их в порядке создания
-        kafkaTemplate.send(TOPIC, event.aggregateId, serializedMessage)
+        kafkaTemplate.send(properties.topic, event.aggregateId, serializedMessage)
             .whenComplete { _, exception ->
                 if (exception == null) {
                     repository.markPublished(event.id, Instant.now())
@@ -60,9 +62,6 @@ class OutboxEventPublisher(
 
     companion object {
         private val log = LoggerFactory.getLogger(OutboxEventPublisher::class.java)
-        private const val TOPIC = "payment.events"
-        private const val BATCH_SIZE = 100
-        private const val POLL_INTERVAL_MS = 5_000L
     }
 
 }

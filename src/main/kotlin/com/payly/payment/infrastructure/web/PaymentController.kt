@@ -47,7 +47,7 @@ class PaymentController(
                 amount = createPaymentRequest.amount,
                 description = createPaymentRequest.description,
                 metadata = createPaymentRequest.metadata,
-                cardLast4 = createPaymentRequest.card.number.takeLast(4),
+                cardNumber = createPaymentRequest.card.number,
             )
         )
 
