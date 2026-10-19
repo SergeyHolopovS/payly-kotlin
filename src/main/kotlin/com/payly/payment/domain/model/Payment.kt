@@ -1,6 +1,6 @@
 package com.payly.payment.domain.model
 
-import com.payly.share.exceptions.payment.InvalidPaymentStatusTransitionException
+import com.payly.share.infrastructure.exceptions.payment.InvalidPaymentStatusTransitionException
 import java.time.Instant
 import java.util.UUID
 

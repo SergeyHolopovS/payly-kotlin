@@ -10,9 +10,9 @@ import com.payly.payment.domain.model.PaymentStatus
 import com.payly.payment.infrastructure.mapper.PaymentMapper
 import com.payly.payment.infrastructure.web.dto.request.CreatePaymentRequest
 import com.payly.payment.infrastructure.web.dto.response.PaymentResponse
-import com.payly.share.security.annotation.CurrentMerchantId
+import com.payly.share.infrastructure.idempotency.Idempotent
+import com.payly.share.infrastructure.security.annotation.CurrentMerchantId
 import jakarta.validation.Valid
-import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
@@ -35,6 +35,7 @@ class PaymentController(
     private val mapper: PaymentMapper,
 ) {
 
+    @Idempotent
     @PostMapping
     fun create(
         @RequestBody @Valid createPaymentRequest: CreatePaymentRequest,

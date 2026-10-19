@@ -5,7 +5,7 @@ import com.payly.payment.domain.model.PaymentStatus
 import com.payly.payment.domain.repository.PaymentRepository
 import com.payly.payment.infrastructure.mapper.PaymentMapper
 import com.payly.payment.infrastructure.persistence.entity.PaymentJpaEntity
-import com.payly.share.exceptions.payment.PaymentNotFoundException
+import com.payly.share.infrastructure.exceptions.payment.PaymentNotFoundException
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.domain.Specification

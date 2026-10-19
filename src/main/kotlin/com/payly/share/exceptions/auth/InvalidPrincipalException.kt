@@ -1,9 +1,0 @@
-package com.payly.share.exceptions.auth
-
-import com.payly.share.exceptions.basic.BasicException
-import org.springframework.http.HttpStatus
-
-data class InvalidPrincipalException(
-    override val message: String = "Не удалось определить идентификатор продавца",
-    override val status: HttpStatus = HttpStatus.INTERNAL_SERVER_ERROR,
-) : BasicException(message, status)

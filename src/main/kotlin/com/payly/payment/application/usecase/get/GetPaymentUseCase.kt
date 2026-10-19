@@ -2,7 +2,7 @@ package com.payly.payment.application.usecase.get
 
 import com.payly.payment.domain.model.Payment
 import com.payly.payment.domain.repository.PaymentRepository
-import com.payly.share.exceptions.payment.PaymentNotFoundException
+import com.payly.share.infrastructure.exceptions.payment.PaymentNotFoundException
 import org.springframework.stereotype.Component
 
 @Component

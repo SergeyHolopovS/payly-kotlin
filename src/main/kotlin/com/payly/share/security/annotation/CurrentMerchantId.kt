@@ -1,5 +1,0 @@
-package com.payly.share.security.annotation
-
-@Target(AnnotationTarget.VALUE_PARAMETER)
-@Retention(AnnotationRetention.RUNTIME)
-annotation class CurrentMerchantId

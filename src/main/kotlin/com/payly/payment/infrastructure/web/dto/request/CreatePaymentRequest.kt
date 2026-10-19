@@ -1,7 +1,7 @@
 package com.payly.payment.infrastructure.web.dto.request
 
-import com.payly.share.web.dto.request.CardRequest
-import com.payly.share.web.validation.SupportedCurrency
+import com.payly.share.infrastructure.web.dto.request.CardRequest
+import com.payly.share.infrastructure.web.validation.SupportedCurrency
 import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.NotBlank
