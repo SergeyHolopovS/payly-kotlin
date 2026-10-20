@@ -17,51 +17,51 @@ import java.util.UUID
 
 @Entity
 @Table(name = "payments")
-data class PaymentJpaEntity(
+class PaymentJpaEntity(
 
     @Id
     @Column(name = "id", nullable = false, unique = true)
-    val id: String = "pay_" + UUID.randomUUID().toString().replace("-", ""),
+    var id: String = "pay_" + UUID.randomUUID().toString().replace("-", ""),
 
     @Column(name = "merchant_id", nullable = false)
-    val merchantId: UUID,
+    var merchantId: UUID,
 
     @Column(name = "amount", nullable = false)
-    val amount: Long,
+    var amount: Long,
 
     @Column(name = "currency", nullable = false, length = 3)
-    val currency: String,
+    var currency: String,
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 32)
-    val status: PaymentStatus = PaymentStatus.CREATED,
+    var status: PaymentStatus = PaymentStatus.CREATED,
 
     @Column(name = "description")
-    val description: String? = null,
+    var description: String? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", nullable = false)
-    val metadata: Map<String, Any?> = emptyMap(),
+    var metadata: Map<String, Any?> = emptyMap(),
 
     @Column(name = "card_last4", nullable = false, length = 4)
-    val cardLast4: String,
+    var cardLast4: String,
 
     @Column(name = "failure_reason")
-    val failureReason: String? = null,
+    var failureReason: String? = null,
 
     @Column(name = "refunded_amount", nullable = false)
-    val refundedAmount: Long = 0,
+    var refundedAmount: Long = 0,
 
     @Version
     @Column(name = "version", nullable = false)
-    val version: Long = 0,
+    var version: Long = 0,
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false)
-    val createdAt: Instant = Instant.now(),
+    var createdAt: Instant = Instant.now(),
 
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
-    val updatedAt: Instant = Instant.now(),
+    var updatedAt: Instant = Instant.now(),
 
 )
