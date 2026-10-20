@@ -1,7 +1,7 @@
 package com.payly.share.infrastructure.exceptions.dto
 
 import org.springframework.http.HttpStatus
-import tools.jackson.annotation.JsonInclude
+import com.fasterxml.jackson.annotation.JsonInclude
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class ErrorDto(

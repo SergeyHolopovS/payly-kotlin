@@ -3,7 +3,7 @@ CREATE TABLE idempotency_records (
     merchant_id      UUID NOT NULL,
     idempotency_key  VARCHAR(255) NOT NULL,
     request_hash     VARCHAR(128) NOT NULL,
-    response_status  SMALLINT NOT NULL,
+    response_status  INTEGER NOT NULL,
     response_body    TEXT NOT NULL,
     created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
 

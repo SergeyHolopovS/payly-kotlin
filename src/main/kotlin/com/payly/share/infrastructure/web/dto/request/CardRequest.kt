@@ -1,6 +1,6 @@
 package com.payly.share.infrastructure.web.dto.request
 
-import com.payly.share.web.validation.Luhn
+import com.payly.share.infrastructure.web.validation.Luhn
 import com.payly.share.infrastructure.web.validation.NotExpiredCard
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min

@@ -1,4 +1,4 @@
-package com.payly.share.web.validation
+package com.payly.share.infrastructure.web.validation
 
 import jakarta.validation.ConstraintValidator
 import jakarta.validation.ConstraintValidatorContext
