@@ -4,7 +4,7 @@ import com.payly.outbox.domain.model.OutboxEvent
 import com.payly.outbox.domain.repository.OutboxEventRepository
 import com.payly.outbox.infrastucture.mapper.OutboxEventMapper
 import com.payly.outbox.infrastucture.persistence.entity.OutboxEventJpaEntity
-import org.springframework.data.domain.Limit
+import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Repository
 import java.time.Instant
 import java.util.UUID
@@ -32,10 +32,12 @@ class OutboxEventRepositoryImpl(
         )
 
     override fun findUnpublished(limit: Int): List<OutboxEvent>
-        = repository.findByPublishedAtIsNullOrderByCreatedAtAsc(Limit.of(limit))
+        = repository
+            .findByPublishedAtIsNullOrderByCreatedAtAsc(PageRequest.of(0, limit))
             .map(mapper::toModel)
 
-    override fun markAsPublished(id: UUID)
-        = repository.markAsPublished(id, Instant.now())
+    override fun markPublished(id: UUID, publishedAt: Instant) {
+        repository.markPublished(id, publishedAt)
+    }
 
 }

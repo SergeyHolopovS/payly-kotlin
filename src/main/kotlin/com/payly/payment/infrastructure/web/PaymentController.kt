@@ -48,7 +48,7 @@ class PaymentController(
                 amount = createPaymentRequest.amount,
                 description = createPaymentRequest.description,
                 metadata = createPaymentRequest.metadata,
-                cardLast4 = UUID.randomUUID().toString(),
+                cardNumber = createPaymentRequest.card.number,
             )
         )
 

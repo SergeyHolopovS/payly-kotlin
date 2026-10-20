@@ -22,6 +22,8 @@ spring:
 
   data:
     redis:
+      repositories:
+        enabled: false
       host: localhost
       port: 6379
 
@@ -38,6 +40,17 @@ spring:
 
 payment:
   supported-currencies: ${PAYMENT_SUPPORTED_CURRENCIES:RUB,USD,EUR}
+  processing:
+    min-delay-seconds: ${PAYMENT_PROCESSING_MIN_DELAY_SECONDS:1}
+    max-delay-seconds: ${PAYMENT_PROCESSING_MAX_DELAY_SECONDS:5}
+    batch-size: ${PAYMENT_PROCESSING_BATCH_SIZE:100}
+    poll-interval-ms: ${PAYMENT_PROCESSING_POLL_INTERVAL_MS:1000}
+
+outbox:
+  publisher:
+    topic: ${OUTBOX_PUBLISHER_TOPIC:payment.events}
+    batch-size: ${OUTBOX_PUBLISHER_BATCH_SIZE:100}
+    poll-interval-ms: ${OUTBOX_PUBLISHER_POLL_INTERVAL_MS:5000}
 
 server:
   port: 8080
