@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.time.Instant
 import java.util.UUID
@@ -75,11 +76,13 @@ class PaymentController(
         )
     }
 
+    // Фильтры — необязательные query-параметры (?status=...&createdFrom=...&createdTo=...):
+    // незаданный фильтр приходит как null и не добавляет условие в запрос
     @GetMapping
     fun list(
-        @PathVariable createdFrom: Instant,
-        @PathVariable createdTo: Instant,
-        @PathVariable status: PaymentStatus,
+        @RequestParam(required = false) createdFrom: Instant?,
+        @RequestParam(required = false) createdTo: Instant?,
+        @RequestParam(required = false) status: PaymentStatus?,
         @CurrentMerchantId merchantId: UUID,
         pageable: Pageable
     ): ResponseEntity<List<PaymentResponse>> {

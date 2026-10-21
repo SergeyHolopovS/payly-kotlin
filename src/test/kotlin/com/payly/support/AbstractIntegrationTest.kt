@@ -1,6 +1,7 @@
 package com.payly.support
 
 import com.payly.support.data.MerchantTestData
+import com.payly.support.data.PaymentTestData
 import com.payly.support.data.TestDatabase
 import com.payly.support.data.TestMerchants
 import org.junit.jupiter.api.BeforeEach
@@ -45,6 +46,8 @@ abstract class AbstractIntegrationTest {
     private lateinit var redisTemplate: StringRedisTemplate
 
     protected val merchants: MerchantTestData by lazy { MerchantTestData(jdbcTemplate) }
+
+    protected val payments: PaymentTestData by lazy { PaymentTestData(jdbcTemplate) }
 
     // Очистка ДО теста, а не после: если тест упал на середине, следующий
     // всё равно стартует с чистой БД, а после падения можно посмотреть, что осталось
