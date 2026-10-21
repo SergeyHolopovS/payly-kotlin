@@ -35,16 +35,18 @@ class KafkaTestConsumer(topic: String) : AutoCloseable {
     private val received = mutableListOf<ConsumerRecord<String, String>>()
 
     /**
-     * Опрашивает топик, пока не появится хотя бы одна запись под [predicate]
-     * (или не выйдет [timeout] — тогда Awaitility уронит тест), и возвращает все такие записи.
+     * Опрашивает топик, пока не наберётся [minCount] записей под [predicate]
+     * (или не выйдет [timeout] — тогда Awaitility уронит тест), и возвращает все такие записи
+     * в порядке чтения.
      */
     fun awaitRecords(
         timeout: Duration = Duration.ofSeconds(15),
+        minCount: Int = 1,
         predicate: (ConsumerRecord<String, String>) -> Boolean,
     ): List<ConsumerRecord<String, String>> {
         await().atMost(timeout).until {
             consumer.poll(Duration.ofMillis(200)).forEach(received::add)
-            received.any(predicate)
+            received.count(predicate) >= minCount
         }
 
         return received.filter(predicate)
