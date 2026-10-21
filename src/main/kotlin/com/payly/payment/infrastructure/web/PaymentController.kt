@@ -104,7 +104,8 @@ class PaymentController(
     }
 
     @Idempotent
-    @PostMapping("/payment/{id}/cancel")
+    // Путь относительно @RequestMapping("/api/v1/payment") → POST /api/v1/payment/{id}/cancel
+    @PostMapping("/{id}/cancel")
     fun cancel(
         @PathVariable id: String,
         @CurrentMerchantId merchantId: UUID,

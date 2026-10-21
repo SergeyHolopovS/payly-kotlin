@@ -8,6 +8,7 @@ import com.payly.payment.domain.model.PaymentStatus
 import com.payly.payment.domain.model.toEventPayload
 import com.payly.payment.domain.repository.PaymentRepository
 import com.payly.share.infrastructure.exceptions.payment.PaymentNotFoundException
+import com.payly.share.infrastructure.exceptions.payment.PaymentProcessingException
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 
@@ -25,6 +26,11 @@ class CancelPaymentUseCase (
         // 404 если продавец не владеет платежём
         if (payment.merchantId != command.merchantId)
             throw PaymentNotFoundException()
+
+        // Платёж уже в гейтвее — отдельная ошибка вместо общей "недопустимый переход":
+        // клиенту нужно понять, что результат ещё будет, и его стоит подождать
+        if (payment.status == PaymentStatus.PROCESSING)
+            throw PaymentProcessingException()
 
         // Обновляем модель
         val updatedPayment = payment.transitionTo(PaymentStatus.CANCELED)

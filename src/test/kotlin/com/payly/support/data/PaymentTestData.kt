@@ -1,6 +1,7 @@
 package com.payly.support.data
 
 import com.payly.payment.domain.model.PaymentStatus
+import com.payly.support.fixtures.TestCards
 import org.springframework.jdbc.core.JdbcTemplate
 import java.sql.Timestamp
 import java.time.Instant
@@ -13,8 +14,8 @@ import java.util.UUID
  * Нужен тестам на чтение: через POST нельзя получить платёж в произвольном статусе
  * (CANCELED, REFUNDED) или с заданной датой создания — а фильтрам списка нужны именно они.
  *
- * Статус PROCESSING лучше не использовать: такой платёж через пару секунд
- * подхватит PaymentProcessingScheduler и сменит статус прямо во время теста.
+ * Для статуса PROCESSING используйте [createProcessing]: обычный PROCESSING-платёж
+ * через пару секунд подхватит PaymentProcessingScheduler и сменит статус прямо во время теста.
  */
 class PaymentTestData(private val jdbcTemplate: JdbcTemplate) {
 
@@ -53,5 +54,16 @@ class PaymentTestData(private val jdbcTemplate: JdbcTemplate) {
 
         return id
     }
+
+    /**
+     * Платёж в PROCESSING, который планировщик не тронет ближайшие 30 секунд
+     * (см. [com.payly.support.fixtures.TestCards.SLOW_PROCESSING]).
+     */
+    fun createProcessing(merchantId: String = TestMerchants.DEFAULT_MERCHANT_ID): String =
+        create(
+            merchantId = merchantId,
+            status = PaymentStatus.PROCESSING,
+            cardLast4 = TestCards.SLOW_PROCESSING.takeLast(4),
+        )
 
 }
