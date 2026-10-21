@@ -27,4 +27,8 @@ data class Payment(
 
         return copy(status = target, updatedAt = Instant.now())
     }
+
+    fun canTransitionTo(target: PaymentStatus): Boolean
+        = status.canTransitionTo(target)
+
 }

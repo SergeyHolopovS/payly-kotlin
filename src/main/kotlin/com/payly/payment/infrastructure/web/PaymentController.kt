@@ -1,5 +1,7 @@
 package com.payly.payment.infrastructure.web
 
+import com.payly.payment.application.usecase.cancel.CancelPaymentCommand
+import com.payly.payment.application.usecase.cancel.CancelPaymentUseCase
 import com.payly.payment.application.usecase.create.CreatePaymentCommand
 import com.payly.payment.application.usecase.create.CreatePaymentUseCase
 import com.payly.payment.application.usecase.get.GetPaymentCommand
@@ -32,6 +34,7 @@ class PaymentController(
     private val create: CreatePaymentUseCase,
     private val get: GetPaymentUseCase,
     private val list: GetListPaymentsUseCase,
+    private val cancel: CancelPaymentUseCase,
     private val mapper: PaymentMapper,
 ) {
 
@@ -94,6 +97,24 @@ class PaymentController(
             payments
                 .map(mapper::toResponse)
                 .toList()
+        )
+    }
+
+    @Idempotent
+    @PostMapping("/payment/{id}/cancel")
+    fun cancel(
+        @PathVariable id: String,
+        @CurrentMerchantId merchantId: UUID,
+    ): ResponseEntity<PaymentResponse> {
+        val payment = cancel.execute(
+            CancelPaymentCommand(
+                merchantId = merchantId,
+                id = id,
+            )
+        )
+
+        return ResponseEntity.ok(
+            mapper.toResponse(payment)
         )
     }
 
