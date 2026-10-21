@@ -1,7 +1,7 @@
 package com.payly.webhook.infrastructure.utils
 
 import com.payly.merchant.infrastructure.persistence.repository.MerchantJpaRepository
-import com.payly.webhook.infrastructure.persistense.entity.WebhookDelivery
+import com.payly.webhook.infrastructure.persistense.entity.WebhookDeliveryJpaEntity
 import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
@@ -22,7 +22,7 @@ class WebhookSender (
         )
         .build()
 
-    fun send (delivery: WebhookDelivery): WebhookResult {
+    fun send (delivery: WebhookDeliveryJpaEntity): WebhookResult {
         val merchant = merchantRepository.findById(delivery.merchantId)
         if (merchant.isPresent) return WebhookResult.Skipped
         val url = merchant.get().webhookUrl

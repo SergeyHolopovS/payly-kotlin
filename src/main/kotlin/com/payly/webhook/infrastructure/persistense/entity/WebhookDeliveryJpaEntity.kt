@@ -14,7 +14,7 @@ import java.util.UUID
 
 @Entity
 @Table(name = "webhook_deliveries")
-class WebhookDelivery(
+class WebhookDeliveryJpaEntity(
 
     @Id
     @Column(name = "id", nullable = false, unique = true)
