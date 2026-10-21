@@ -20,6 +20,10 @@ repositories {
 	mavenCentral()
 }
 
+// Mockito подключается как javaagent: на JDK 21+ динамическая загрузка агента
+// (self-attach) выдаёт предупреждение и в будущих версиях будет запрещена
+val mockitoAgent: Configuration by configurations.creating
+
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	implementation("org.aspectj:aspectjweaver")
@@ -52,6 +56,9 @@ dependencies {
 	testImplementation("org.testcontainers:testcontainers-junit-jupiter")
 	testImplementation("org.testcontainers:testcontainers-kafka")
 	testImplementation("org.testcontainers:testcontainers-postgresql")
+	testImplementation("org.mockito.kotlin:mockito-kotlin:6.1.0")
+	testImplementation("org.awaitility:awaitility")
+	mockitoAgent("org.mockito:mockito-core") { isTransitive = false }
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -73,4 +80,21 @@ kapt {
 
 tasks.withType<Test> {
 	useJUnitPlatform()
+	jvmArgs("-javaagent:${mockitoAgent.asPath}")
 }
+
+// Тесты разделены по пакетам unit / integration / e2e и помечены JUnit-тегами
+// (см. com.payly.support.UnitTest, AbstractIntegrationTest, AbstractE2ETest).
+// `test` запускает всё, отдельные задачи ниже — только свой уровень.
+fun registerTaggedTestTask(name: String, tag: String, description: String) =
+	tasks.register<Test>(name) {
+		this.description = description
+		group = LifecycleBasePlugin.VERIFICATION_GROUP
+		testClassesDirs = sourceSets.test.get().output.classesDirs
+		classpath = sourceSets.test.get().runtimeClasspath
+		useJUnitPlatform { includeTags(tag) }
+	}
+
+registerTaggedTestTask("unitTest", "unit", "Запускает unit-тесты (Mockito, без Spring-контекста)")
+registerTaggedTestTask("integrationTest", "integration", "Запускает интеграционные тесты (MockMvc + Testcontainers)")
+registerTaggedTestTask("e2eTest", "e2e", "Запускает e2e-тесты (реальный HTTP-сервер + Testcontainers)")
