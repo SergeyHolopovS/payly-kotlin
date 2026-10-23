@@ -2,6 +2,7 @@ package com.payly.webhook.infrastructure.utils
 
 import com.payly.merchant.infrastructure.persistence.repository.MerchantJpaRepository
 import com.payly.webhook.infrastructure.persistense.entity.WebhookDeliveryJpaEntity
+import org.springframework.http.HttpStatusCode
 import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
@@ -24,7 +25,7 @@ class WebhookSender (
 
     fun send (delivery: WebhookDeliveryJpaEntity): WebhookResult {
         val merchant = merchantRepository.findById(delivery.merchantId)
-        if (merchant.isPresent) return WebhookResult.Skipped
+        if (merchant.isEmpty) return WebhookResult.Skipped
         val url = merchant.get().webhookUrl
             ?: return WebhookResult.Skipped
 
@@ -42,9 +43,12 @@ class WebhookSender (
                 .header("Content-Type", "application/json")
                 .body(delivery.payload)
                 .retrieve()
+                // По умолчанию retrieve() бросает исключение на 4xx/5xx и код ответа теряется.
+                // Глушим его, чтобы код дошёл до проверки ниже и сохранился в last_response_code
+                .onStatus(HttpStatusCode::isError) { _, _ -> }
                 .toBodilessEntity()
 
-            val code = response.statusCode.value() ?: 0
+            val code = response.statusCode.value()
             if (code in 200..299) return WebhookResult.Success(code)
             else return WebhookResult.Failure(code, "non-2xx response")
         } catch (e: Exception) {
