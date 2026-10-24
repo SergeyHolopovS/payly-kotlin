@@ -63,7 +63,7 @@ class CreateRefundUseCase(
             CreateOutboxEventCommand(
                 aggregateId = payment.id,
                 eventType = OutboxEventType.REFUND_SUCCEEDED.name,
-                payload = refund.toEventPayload(),
+                payload = refund.toEventPayload(payment.merchantId),
             )
         )
 

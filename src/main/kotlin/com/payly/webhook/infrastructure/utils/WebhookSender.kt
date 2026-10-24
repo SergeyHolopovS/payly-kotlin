@@ -43,12 +43,16 @@ class WebhookSender (
                 .header("Content-Type", "application/json")
                 .body(delivery.payload)
                 .retrieve()
+                // По умолчанию retrieve() бросает исключение на 4xx/5xx, и код ответа
+                // продавца терялся в catch ниже. Статус разбираем сами
+                .onStatus({ it.isError }) { _, _ -> }
                 .toBodilessEntity()
 
-            val code = response.statusCode.value() ?: 0
-            if (code in 200..299) return WebhookResult.Success(code)
-            else return WebhookResult.Failure(code, "non-2xx response")
+            val code = response.statusCode.value()
+            if (code in 200..299) WebhookResult.Success(code)
+            else WebhookResult.Failure(code, "non-2xx response")
         } catch (e: Exception) {
+            // Ответа нет вовсе: таймаут, отказ в соединении, битый URL
             WebhookResult.Failure(0, e.message ?: "unknown error")
         }
     }

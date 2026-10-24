@@ -37,6 +37,7 @@ class WebhookSenderTest {
     private var responseCode = 200
     private var receivedBody: String? = null
     private var receivedSignature: String? = null
+    private var receivedContentType: String? = null
 
     private val merchantId = UUID.randomUUID()
     private val secret = "whsec_test"
@@ -54,6 +55,7 @@ class WebhookSenderTest {
             createContext("/webhook") { exchange ->
                 receivedBody = exchange.requestBody.readAllBytes().toString(Charsets.UTF_8)
                 receivedSignature = exchange.requestHeaders.getFirst("X-Signature")
+                receivedContentType = exchange.requestHeaders.getFirst("Content-Type")
                 exchange.sendResponseHeaders(responseCode, -1)
                 exchange.close()
             }
@@ -87,7 +89,47 @@ class WebhookSenderTest {
 
         val result = sender.send(delivery)
 
+        // Код ответа продавца сохраняется в доставке — по нему разбираются инциденты
+        assertThat(result).isEqualTo(WebhookResult.Failure(500, "non-2xx response"))
+    }
+
+    @Test
+    fun `ответ продавца 4xx — неудачная попытка с кодом ответа`() {
+        givenMerchant(webhookUrl = webhookUrl())
+        responseCode = 404
+
+        assertThat(sender.send(delivery)).isEqualTo(WebhookResult.Failure(404, "non-2xx response"))
+    }
+
+    @Test
+    fun `любой 2xx ответ считается успешной доставкой`() {
+        givenMerchant(webhookUrl = webhookUrl())
+        responseCode = 204
+
+        assertThat(sender.send(delivery)).isEqualTo(WebhookResult.Success(204))
+    }
+
+    @Test
+    fun `эндпоинт продавца недоступен — неудачная попытка с кодом 0`() {
+        // Сервер остановлен: соединение будет отклонено
+        val url = webhookUrl()
+        server.stop(0)
+        givenMerchant(webhookUrl = url)
+
+        val result = sender.send(delivery)
+
         assertThat(result).isInstanceOf(WebhookResult.Failure::class.java)
+        assertThat((result as WebhookResult.Failure).code).isZero()
+        assertThat(result.error).isNotBlank()
+    }
+
+    @Test
+    fun `вебхук уходит с Content-Type application json`() {
+        givenMerchant(webhookUrl = webhookUrl())
+
+        sender.send(delivery)
+
+        assertThat(receivedContentType).startsWith("application/json")
     }
 
     @Test

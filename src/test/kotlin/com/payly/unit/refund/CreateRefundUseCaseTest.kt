@@ -150,6 +150,8 @@ class CreateRefundUseCaseTest {
         assertThat(captor.firstValue.eventType).isEqualTo(OutboxEventType.REFUND_SUCCEEDED.name)
         assertThat(captor.firstValue.payload)
             .containsEntry("refundId", refund.id)
+            // Нужен консьюмеру вебхуков, чтобы найти продавца
+            .containsEntry("merchantId", TestMerchants.DEFAULT_MERCHANT_ID)
             .containsEntry("paymentId", "pay_1")
             .containsEntry("amount", "4000")
             .containsEntry("status", RefundStatus.SUCCEEDED.name)
