@@ -14,6 +14,8 @@ interface OutboxEventJpaRepository : JpaRepository<OutboxEventJpaEntity, UUID> {
 
     fun findByPublishedAtIsNullOrderByCreatedAtAsc(pageable: Pageable): List<OutboxEventJpaEntity>
 
+    fun countByPublishedAtIsNull(): Long
+
     @Modifying
     @Transactional
     @Query("UPDATE OutboxEventJpaEntity e SET e.publishedAt = :publishedAt WHERE e.id = :id")

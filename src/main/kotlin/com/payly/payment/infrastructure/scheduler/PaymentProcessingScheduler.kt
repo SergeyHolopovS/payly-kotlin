@@ -3,6 +3,8 @@ package com.payly.payment.infrastructure.scheduler
 import com.payly.outbox.application.usecase.create.CreateOutboxEventCommand
 import com.payly.outbox.application.usecase.create.CreateOutboxEventUseCase
 import com.payly.outbox.domain.model.OutboxEventType
+import com.payly.payment.application.metrics.FinalizationPath
+import com.payly.payment.application.metrics.PaymentMetrics
 import com.payly.payment.domain.model.Payment
 import com.payly.payment.domain.model.PaymentStatus
 import com.payly.payment.domain.model.toEventPayload
@@ -25,6 +27,7 @@ class PaymentProcessingScheduler(
     private val createOutbox: CreateOutboxEventUseCase,
     private val properties: PaymentProcessingProperties,
     private val transactionTemplate: TransactionTemplate,
+    private val paymentMetrics: PaymentMetrics,
 ) {
 
     @Scheduled(fixedDelayString = "\${payment.processing.poll-interval-ms:1000}")
@@ -68,6 +71,9 @@ class PaymentProcessingScheduler(
                 payload = updated.toEventPayload(),
             )
         )
+
+        // Учтётся только после коммита пачки
+        paymentMetrics.paymentFinalized(updated, FinalizationPath.ASYNC)
     }
 
     private fun eventTypeFor(status: PaymentStatus): OutboxEventType = when (status) {

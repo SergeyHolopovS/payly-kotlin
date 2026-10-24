@@ -3,6 +3,7 @@ package com.payly.payment.application.usecase.cancel
 import com.payly.outbox.application.usecase.create.CreateOutboxEventCommand
 import com.payly.outbox.application.usecase.create.CreateOutboxEventUseCase
 import com.payly.outbox.domain.model.OutboxEventType
+import com.payly.payment.application.metrics.PaymentMetrics
 import com.payly.payment.domain.model.Payment
 import com.payly.payment.domain.model.PaymentStatus
 import com.payly.payment.domain.model.toEventPayload
@@ -15,7 +16,8 @@ import org.springframework.transaction.annotation.Transactional
 @Component
 class CancelPaymentUseCase (
     private val repository: PaymentRepository,
-    private val outbox: CreateOutboxEventUseCase
+    private val outbox: CreateOutboxEventUseCase,
+    private val paymentMetrics: PaymentMetrics,
 ) {
 
     @Transactional
@@ -46,6 +48,9 @@ class CancelPaymentUseCase (
                 payload = updatedPayment.toEventPayload()
             )
         )
+
+        // Учтётся только после коммита транзакции
+        paymentMetrics.paymentCanceled(updatedPayment)
 
         // Возвращаем
         return updatedPayment

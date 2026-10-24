@@ -24,7 +24,8 @@ class WebhookSender (
 
     fun send (delivery: WebhookDeliveryJpaEntity): WebhookResult {
         val merchant = merchantRepository.findById(delivery.merchantId)
-        if (merchant.isPresent) return WebhookResult.Skipped
+        // Продавца нет (или у него не настроен webhook_url) — слать некуда
+        if (merchant.isEmpty) return WebhookResult.Skipped
         val url = merchant.get().webhookUrl
             ?: return WebhookResult.Skipped
 

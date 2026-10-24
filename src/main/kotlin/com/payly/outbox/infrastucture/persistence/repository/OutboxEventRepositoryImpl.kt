@@ -36,6 +36,9 @@ class OutboxEventRepositoryImpl(
             .findByPublishedAtIsNullOrderByCreatedAtAsc(PageRequest.of(0, limit))
             .map(mapper::toModel)
 
+    override fun countUnpublished(): Long
+        = repository.countByPublishedAtIsNull()
+
     override fun markPublished(id: UUID, publishedAt: Instant) {
         repository.markPublished(id, publishedAt)
     }

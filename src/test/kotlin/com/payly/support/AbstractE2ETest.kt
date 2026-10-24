@@ -9,12 +9,16 @@ import com.payly.support.fixtures.aCreatePaymentRequest
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Tag
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.micrometer.metrics.test.autoconfigure.AutoConfigureMetrics
 import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureRestTestClient
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.context.annotation.Import
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.http.MediaType
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.test.context.DynamicPropertyRegistry
+import org.springframework.test.context.DynamicPropertySource
+import org.springframework.test.util.TestSocketUtils
 import org.springframework.test.web.servlet.client.RestTestClient
 import java.util.UUID
 
@@ -34,6 +38,9 @@ import java.util.UUID
 )
 // RestTestClient, уже направленный на порт поднятого сервера
 @AutoConfigureRestTestClient
+// В тестах Boot по умолчанию отключает экспорт метрик — без этого не будет /actuator/prometheus.
+// Включено для всех e2e, а не только для ActuatorE2ETest, чтобы контекст оставался общим
+@AutoConfigureMetrics
 @Import(TestcontainersConfiguration::class)
 abstract class AbstractE2ETest {
 
@@ -74,5 +81,24 @@ abstract class AbstractE2ETest {
             .expectStatus().isOk
             .expectBody(PaymentResponse::class.java)
             .returnResult().responseBody!!
+
+    companion object {
+
+        // Свободный порт выбирается один раз на JVM — значение свойства одинаково
+        // у всех e2e-тестов, и Spring переиспользует для них один контекст
+        private val managementPort = TestSocketUtils.findAvailableTcpPort()
+
+        /**
+         * Actuator — на отдельном порту, как в проде. Не `0`: server.port в RANDOM_PORT
+         * тоже 0, и при равных значениях Boot считает порты одинаковыми и вешает
+         * Actuator на порт API. И не 8081 — он занят локально запущенным приложением.
+         */
+        @JvmStatic
+        @DynamicPropertySource
+        fun managementPort(registry: DynamicPropertyRegistry) {
+            registry.add("management.server.port") { managementPort }
+        }
+
+    }
 
 }

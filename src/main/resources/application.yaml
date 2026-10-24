@@ -56,7 +56,67 @@ server:
   port: 8080
 
 management:
+  # Actuator живёт на отдельном порту: его не публикуют наружу (ingress/балансер
+  # смотрят только на server.port), а Prometheus и оркестратор ходят на него
+  # по внутренней сети. Поэтому эндпоинты на нём открыты без API-ключа (см. SecurityConfig)
+  server:
+    port: ${MANAGEMENT_SERVER_PORT:8081}
+
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,prometheus,metrics
+
+  endpoint:
+    health:
+      # /actuator/health/liveness и /actuator/health/readiness для проб Kubernetes
+      # (вне k8s Boot их сам не включает)
+      probes:
+        enabled: true
+      # Порт внутренний — детали (какой компонент упал и почему) нужны тому, кто разбирает инцидент
+      show-details: always
+      group:
+        # Liveness — только состояние самого процесса: если упадёт Postgres или Redis,
+        # перезапуск пода не поможет, а лишь устроит лавину рестартов
+        liveness:
+          include: livenessState
+        # Readiness — готовность принимать трафик: без БД и Redis (идемпотентность,
+        # распределённые блокировки) API всё равно не работает, под выводится из балансировки
+        readiness:
+          include: readinessState,db,redis
+
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+
+  metrics:
+    # Общий тег для всех метрик — чтобы в общем Prometheus отличать сервисы друг от друга
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      # Гистограммы (бакеты _bucket) вместо клиентских перцентилей: перцентили
+      # из бакетов агрегируются в Prometheus по всем инстансам через histogram_quantile
+      percentiles-histogram:
+        "[http.server.requests]": true
+        "[payly.payment.gateway.charge]": true
+        "[payly.webhook.delivery.attempt]": true
+      # Явные границы бакетов под SLO — по ним считается доля "быстрых" запросов
+      slo:
+        "[http.server.requests]": 50ms,100ms,250ms,500ms,1s
+      # Обрезаем диапазон бакетов: иначе Micrometer генерирует их от 1 мс до 30 с
+      # (~70 штук на каждую комбинацию тегов)
+      minimum-expected-value:
+        "[http.server.requests]": 5ms
+      maximum-expected-value:
+        "[http.server.requests]": 10s
+        # Медленная тестовая карта отвечает ~30 с — верхняя граница с запасом
+        "[payly.payment.gateway.charge]": 60s
+
+info:
+  app:
+    name: ${spring.application.name}
+    description: Payment processing service

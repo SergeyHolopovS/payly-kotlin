@@ -14,6 +14,8 @@ interface OutboxEventRepository {
 
     fun findUnpublished(limit: Int): List<OutboxEvent>
 
+    fun countUnpublished(): Long
+
     fun markPublished(id: UUID, publishedAt: Instant)
 
 }

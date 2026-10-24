@@ -3,11 +3,16 @@ package com.payly.outbox.infrastucture.messaging
 import com.payly.outbox.domain.model.OutboxEvent
 import com.payly.outbox.domain.repository.OutboxEventRepository
 import com.payly.outbox.infrastucture.properties.OutboxPublisherProperties
+import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.Gauge
+import io.micrometer.core.instrument.MeterRegistry
+import io.micrometer.core.instrument.Timer
 import org.slf4j.LoggerFactory
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 import tools.jackson.databind.ObjectMapper
+import java.time.Duration
 import java.time.Instant
 
 /**
@@ -26,7 +31,17 @@ class OutboxEventPublisher(
     private val kafkaTemplate: KafkaTemplate<String, String>,
     private val objectMapper: ObjectMapper,
     private val properties: OutboxPublisherProperties,
+    private val meterRegistry: MeterRegistry,
 ) {
+
+    init {
+        // Главный сигнал для алерта "outbox застрял": растущий бэклог значит, что Kafka
+        // недоступна или publisher не успевает. Значение считается запросом в БД
+        // на каждый scrape Prometheus (раз в 15–30 с) — count по индексу published_at дешёвый
+        Gauge.builder("payly.outbox.events.pending", repository) { it.countUnpublished().toDouble() }
+            .description("Outbox-события, ещё не опубликованные в Kafka")
+            .register(meterRegistry)
+    }
 
     @Scheduled(fixedDelayString = "\${outbox.publisher.poll-interval-ms:5000}")
     fun publishPending() {
@@ -53,11 +68,34 @@ class OutboxEventPublisher(
         kafkaTemplate.send(properties.topic, event.aggregateId, serializedMessage)
             .whenComplete { _, exception ->
                 if (exception == null) {
-                    repository.markPublished(event.id, Instant.now())
+                    val publishedAt = Instant.now()
+                    repository.markPublished(event.id, publishedAt)
+                    recordPublished(event, "success")
+                    recordLag(event, publishedAt)
                 } else {
                     log.error("Failed to publish outbox event {} ({})", event.id, event.eventType, exception)
+                    recordPublished(event, "failure")
                 }
             }
+    }
+
+    private fun recordPublished(event: OutboxEvent, result: String) {
+        Counter.builder("payly.outbox.events.published")
+            .description("Попытки публикации outbox-событий в Kafka")
+            .tag("event_type", event.eventType)
+            .tag("result", result)
+            .register(meterRegistry)
+            .increment()
+    }
+
+    // Задержка от записи события в БД до подтверждения Kafka — то, насколько
+    // консьюмеры отстают от реальности (включая интервал опроса и ретраи)
+    private fun recordLag(event: OutboxEvent, publishedAt: Instant) {
+        Timer.builder("payly.outbox.events.lag")
+            .description("Время от создания outbox-события до публикации в Kafka")
+            .tag("event_type", event.eventType)
+            .register(meterRegistry)
+            .record(Duration.between(event.createdAt, publishedAt))
     }
 
     companion object {

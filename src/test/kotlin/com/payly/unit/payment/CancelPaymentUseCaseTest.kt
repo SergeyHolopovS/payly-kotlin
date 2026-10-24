@@ -3,6 +3,7 @@ package com.payly.unit.payment
 import com.payly.outbox.application.usecase.create.CreateOutboxEventCommand
 import com.payly.outbox.application.usecase.create.CreateOutboxEventUseCase
 import com.payly.outbox.domain.model.OutboxEventType
+import com.payly.payment.application.metrics.PaymentMetrics
 import com.payly.payment.application.usecase.cancel.CancelPaymentCommand
 import com.payly.payment.application.usecase.cancel.CancelPaymentUseCase
 import com.payly.payment.domain.model.Payment
@@ -43,6 +44,9 @@ class CancelPaymentUseCaseTest {
     @Mock
     private lateinit var outbox: CreateOutboxEventUseCase
 
+    @Mock
+    private lateinit var paymentMetrics: PaymentMetrics
+
     private lateinit var useCase: CancelPaymentUseCase
 
     private val ownerId = UUID.fromString(TestMerchants.DEFAULT_MERCHANT_ID)
@@ -50,7 +54,7 @@ class CancelPaymentUseCaseTest {
 
     @BeforeEach
     fun setUp() {
-        useCase = CancelPaymentUseCase(repository = paymentRepository, outbox = outbox)
+        useCase = CancelPaymentUseCase(repository = paymentRepository, outbox = outbox, paymentMetrics = paymentMetrics)
     }
 
     // ---------- Успешная отмена ----------

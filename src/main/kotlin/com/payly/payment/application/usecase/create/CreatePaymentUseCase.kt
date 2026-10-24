@@ -3,6 +3,8 @@ package com.payly.payment.application.usecase.create
 import com.payly.outbox.application.usecase.create.CreateOutboxEventCommand
 import com.payly.outbox.application.usecase.create.CreateOutboxEventUseCase
 import com.payly.outbox.domain.model.OutboxEventType
+import com.payly.payment.application.metrics.FinalizationPath
+import com.payly.payment.application.metrics.PaymentMetrics
 import com.payly.payment.domain.gateway.PaymentGateway
 import com.payly.payment.domain.gateway.PaymentGatewayResult
 import com.payly.payment.domain.model.Payment
@@ -11,6 +13,7 @@ import com.payly.payment.domain.model.toEventPayload
 import com.payly.payment.domain.repository.PaymentRepository
 import org.springframework.stereotype.Component
 import org.springframework.transaction.support.TransactionTemplate
+import java.time.Duration
 
 @Component
 class CreatePaymentUseCase(
@@ -18,19 +21,37 @@ class CreatePaymentUseCase(
     private val createOutbox: CreateOutboxEventUseCase,
     private val paymentGateway: PaymentGateway,
     private val transactionTemplate: TransactionTemplate,
+    private val paymentMetrics: PaymentMetrics,
 ) {
 
     fun execute(command: CreatePaymentCommand): Payment {
         // Номер карты валидируется по Луну на уровне @Valid (CardRequest.number),
         // так что сюда можно попасть только с уже прошедшей валидацию картой.
         val processingPayment = createAndStartProcessing(command)
+        paymentMetrics.paymentCreated(processingPayment)
 
         // Поход в гейтвей выполняется синхронно и ОСОЗНАННО вне транзакции:
         // для тестовой карты имитации долгой обработки это ~30 секунд,
         // и держать на это время открытую транзакцию/соединение с БД нельзя
-        val result = paymentGateway.charge(command.cardNumber)
+        val result = charge(command.cardNumber)
 
-        return finalize(processingPayment, result)
+        val finalized = finalize(processingPayment, result)
+        paymentMetrics.paymentFinalized(finalized, FinalizationPath.SYNC)
+
+        return finalized
+    }
+
+    private fun charge(cardNumber: String): PaymentGatewayResult {
+        val startedAt = System.nanoTime()
+        val result = try {
+            paymentGateway.charge(cardNumber)
+        } catch (e: Exception) {
+            paymentMetrics.gatewayChargeFailed(Duration.ofNanos(System.nanoTime() - startedAt))
+            throw e
+        }
+
+        paymentMetrics.gatewayCharged(result, Duration.ofNanos(System.nanoTime() - startedAt))
+        return result
     }
 
     private fun createAndStartProcessing(command: CreatePaymentCommand): Payment =

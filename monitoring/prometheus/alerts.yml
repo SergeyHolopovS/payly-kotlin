@@ -1,0 +1,41 @@
+# Правила алертов — видны в UI Prometheus (http://localhost:9090/alerts).
+# Alertmanager на локальном стенде не поднят, поэтому никуда не отправляются
+
+groups:
+  - name: payly
+    rules:
+      - alert: PaylyDown
+        expr: up{job="payly"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Prometheus не может забрать метрики payly больше минуты"
+
+      # Outbox не разгребается: Kafka недоступна или publisher не успевает
+      - alert: PaylyOutboxBacklog
+        expr: payly_outbox_events_pending > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "В outbox {{ $value }} неопубликованных событий"
+
+      - alert: PaylyHighDeclineRate
+        expr: |
+          sum(rate(payly_payments_finalized_total{status="failed"}[10m]))
+            / sum(rate(payly_payments_finalized_total[10m])) > 0.3
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Отклоняется {{ $value | humanizePercentage }} платежей"
+
+      - alert: PaylyGatewaySlow
+        expr: |
+          histogram_quantile(0.95, sum by (le) (rate(payly_payment_gateway_charge_seconds_bucket[5m]))) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "p95 ответа гейтвея {{ $value | humanizeDuration }}"

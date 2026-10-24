@@ -6,6 +6,7 @@ import com.payly.outbox.domain.model.OutboxEventType
 import com.payly.payment.domain.model.Payment
 import com.payly.payment.domain.model.PaymentStatus
 import com.payly.payment.domain.repository.PaymentRepository
+import com.payly.refund.application.metrics.RefundMetrics
 import com.payly.refund.domain.model.Refund
 import com.payly.refund.domain.model.RefundStatus
 import com.payly.refund.domain.model.toEventPayload
@@ -23,6 +24,7 @@ class CreateRefundUseCase(
     private val paymentRepository: PaymentRepository,
     private val refundRepository: RefundRepository,
     private val outbox: CreateOutboxEventUseCase,
+    private val refundMetrics: RefundMetrics,
 ) {
 
     @Transactional
@@ -64,6 +66,9 @@ class CreateRefundUseCase(
                 payload = refund.toEventPayload(),
             )
         )
+
+        // Учтётся только после коммита транзакции
+        refundMetrics.refundCreated(refund, updatedPayment)
 
         return refund
     }

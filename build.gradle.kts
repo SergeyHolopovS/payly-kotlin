@@ -26,6 +26,8 @@ val mockitoAgent: Configuration by configurations.creating
 
 dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
+	// Реестр Micrometer в формате Prometheus — отдаётся на /actuator/prometheus
+	runtimeOnly("io.micrometer:micrometer-registry-prometheus")
 	implementation("org.aspectj:aspectjweaver")
 	implementation("org.springframework.boot:spring-boot-starter-data-jpa")
 	implementation("org.springframework.boot:spring-boot-starter-data-redis")
@@ -60,6 +62,11 @@ dependencies {
 	testImplementation("org.awaitility:awaitility")
 	mockitoAgent("org.mockito:mockito-core") { isTransitive = false }
 	testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+// META-INF/build-info.properties: версия и время сборки попадают в /actuator/info
+springBoot {
+	buildInfo()
 }
 
 kotlin {

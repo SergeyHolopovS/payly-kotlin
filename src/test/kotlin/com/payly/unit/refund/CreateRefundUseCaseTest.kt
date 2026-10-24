@@ -6,6 +6,7 @@ import com.payly.outbox.domain.model.OutboxEventType
 import com.payly.payment.domain.model.Payment
 import com.payly.payment.domain.model.PaymentStatus
 import com.payly.payment.domain.repository.PaymentRepository
+import com.payly.refund.application.metrics.RefundMetrics
 import com.payly.refund.application.usecase.create.CreateRefundCommand
 import com.payly.refund.application.usecase.create.CreateRefundUseCase
 import com.payly.refund.domain.model.Refund
@@ -51,6 +52,9 @@ class CreateRefundUseCaseTest {
     @Mock
     private lateinit var outbox: CreateOutboxEventUseCase
 
+    @Mock
+    private lateinit var refundMetrics: RefundMetrics
+
     private lateinit var useCase: CreateRefundUseCase
 
     private val ownerId = UUID.fromString(TestMerchants.DEFAULT_MERCHANT_ID)
@@ -62,6 +66,7 @@ class CreateRefundUseCaseTest {
             paymentRepository = paymentRepository,
             refundRepository = refundRepository,
             outbox = outbox,
+            refundMetrics = refundMetrics,
         )
     }
 

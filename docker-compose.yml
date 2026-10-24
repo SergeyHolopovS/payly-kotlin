@@ -3,7 +3,10 @@ services:
     build: .
     ports:
       - "8080:8080"
+      # Actuator (health, prometheus) — для локальной разработки; в проде этот порт наружу не публикуется
+      - "8081:8081"
     environment:
+      MANAGEMENT_SERVER_PORT: ${MANAGEMENT_SERVER_PORT:-8081}
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/payly
       SPRING_DATASOURCE_USERNAME: payly
       SPRING_DATASOURCE_PASSWORD: payly
@@ -25,6 +28,13 @@ services:
         condition: service_healthy
       kafka:
         condition: service_started
+    # readiness-проба Actuator: контейнер healthy, только когда подняты БД и Redis
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:${MANAGEMENT_SERVER_PORT:-8081}/actuator/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      start_period: 30s
+      retries: 5
 
   postgres:
     image: postgres:17-alpine
@@ -67,5 +77,40 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
 
+  # ---- Мониторинг ----
+  # Prometheus собирает метрики с app:8081/actuator/prometheus и хранит историю
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=7d
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus:ro
+      - prometheus_data:/prometheus
+
+  # Grafana: источник данных и дашборд "Payly — обзор" подключаются сами (provisioning)
+  grafana:
+    image: grafana/grafana:12.1.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      # Локальный стенд: смотреть дашборды можно без логина, править — только под админом
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      # Дашборд payly открывается сразу, без перехода по меню
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/payly.json
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+
 volumes:
   postgres_data:
+  prometheus_data:
+  grafana_data:

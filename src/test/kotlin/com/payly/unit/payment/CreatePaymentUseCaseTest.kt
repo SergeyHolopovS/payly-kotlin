@@ -3,6 +3,8 @@ package com.payly.unit.payment
 import com.payly.outbox.application.usecase.create.CreateOutboxEventCommand
 import com.payly.outbox.application.usecase.create.CreateOutboxEventUseCase
 import com.payly.outbox.domain.model.OutboxEventType
+import com.payly.payment.application.metrics.FinalizationPath
+import com.payly.payment.application.metrics.PaymentMetrics
 import com.payly.payment.application.usecase.create.CreatePaymentCommand
 import com.payly.payment.application.usecase.create.CreatePaymentUseCase
 import com.payly.payment.domain.gateway.PaymentGateway
@@ -23,7 +25,9 @@ import org.mockito.Mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argumentCaptor
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.inOrder
+import org.mockito.kotlin.never
 import org.mockito.kotlin.times
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
@@ -55,6 +59,9 @@ class CreatePaymentUseCaseTest {
     @Mock
     private lateinit var transactionManager: PlatformTransactionManager
 
+    @Mock
+    private lateinit var paymentMetrics: PaymentMetrics
+
     private lateinit var useCase: CreatePaymentUseCase
 
     private val merchantId = UUID.fromString(TestMerchants.DEFAULT_MERCHANT_ID)
@@ -78,6 +85,7 @@ class CreatePaymentUseCaseTest {
             createOutbox = createOutbox,
             paymentGateway = paymentGateway,
             transactionTemplate = TransactionTemplate(transactionManager),
+            paymentMetrics = paymentMetrics,
         )
 
         // TransactionTemplate просит у менеджера статус транзакции — отдаём пустышку
@@ -193,6 +201,28 @@ class CreatePaymentUseCaseTest {
 
         // Вторая транзакция даже не открывалась
         verify(transactionManager, times(1)).getTransaction(any())
+    }
+
+    @Test
+    fun `сообщает метрикам о создании, ответе гейтвея и синхронной финализации`() {
+        whenever(paymentGateway.charge(TestCards.SUCCESS)).thenReturn(PaymentGatewayResult.Approved)
+
+        val payment = useCase.execute(command)
+
+        verify(paymentMetrics).paymentCreated(any())
+        verify(paymentMetrics).gatewayCharged(eq(PaymentGatewayResult.Approved), any())
+        verify(paymentMetrics).paymentFinalized(payment, FinalizationPath.SYNC)
+    }
+
+    @Test
+    fun `при ошибке гейтвея метрики фиксируют сбой, но не финализацию`() {
+        whenever(paymentGateway.charge(TestCards.SUCCESS)).thenThrow(IllegalStateException("gateway is down"))
+
+        assertThatThrownBy { useCase.execute(command) }
+
+        verify(paymentMetrics).gatewayChargeFailed(any())
+        verify(paymentMetrics, never()).gatewayCharged(any(), any())
+        verify(paymentMetrics, never()).paymentFinalized(any(), any())
     }
 
 }
